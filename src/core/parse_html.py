@@ -111,6 +111,27 @@ def remove_links(markdown_content: str) -> str:
     return markdown_content
 
 
+def remove_everything_before_h1(markdown_content: str) -> str:
+    """Remove everything before the first h1 heading in the markdown content.
+
+    Args:
+        markdown_content (str): The input markdown content.
+
+    Returns:
+        str: The markdown content with everything before the first h1 heading removed.
+    """
+
+    finds = re.findall(r"(\n#\s)", markdown_content)
+
+    if not finds:
+        return markdown_content
+
+    h1_location = markdown_content.index(finds[0])
+    markdown_content = markdown_content[h1_location:]
+
+    return markdown_content
+
+
 # -----------------------------------------------
 #                   HANDLERS
 # -----------------------------------------------
@@ -128,6 +149,7 @@ def handle_clean_markdown(markdown_content: str) -> str:
     markdown_content = format_headings(markdown_content)
     markdown_content = remove_links(markdown_content)
     markdown_content = remove_spaces(markdown_content)
+    markdown_content = remove_everything_before_h1(markdown_content)
 
     return markdown_content
 
