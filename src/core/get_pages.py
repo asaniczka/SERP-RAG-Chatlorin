@@ -224,10 +224,18 @@ async def testing():
     """
 
     page_sources = await handle_loading_page_sources(
-        ["https://asaniczka.com", "https://google.com", "https://mail.google.com"]
+        [
+            "https://www.soundguys.com/apple-airpods-review-11072/",
+            "https://www.cnet.com/tech/mobile/apple-airpods-pro-2-review-better-battery-life-and-improved-sound/",
+            "https://www.rtings.com/headphones/reviews/apple/airpods-2nd-generation-truly-wireless",
+        ]
     )
 
-    print(len(page_sources))
+    for idx, page in enumerate(page_sources):
+        with open(
+            f"resources/core/get_pages/html_pages/{idx}.html", "w", encoding="utf-8"
+        ) as wf:
+            wf.write(page)
 
 
 if __name__ == "__main__":
