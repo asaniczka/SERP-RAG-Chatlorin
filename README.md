@@ -12,10 +12,6 @@ This Python project focuses on creating an API endpoint that searches Google for
 
 ## How to Use
 
-```markdown
 1. Clone the project repository to your local machine
 2. Install the required dependencies using `pip install -r requirements.txt`
-3. Run the Python script to start the API endpoint
-4. Make a POST request to the API endpoint with the query as the request payload
-5. Receive the generated answer in the response
-```
+3. Run `playwright install chromium`
