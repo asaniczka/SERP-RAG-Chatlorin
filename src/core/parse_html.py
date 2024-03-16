@@ -156,7 +156,7 @@ def handle_convert_html_to_md(page: str) -> str:
 
 if __name__ == "__main__":
     with open(
-        "resources/core/get_pages/html_pages/1.html", "r", encoding="utf-8"
+        "resources/core/get_pages/html_pages/2.html", "r", encoding="utf-8"
     ) as rf:
         html_content = rf.read()
     data = handle_convert_html_to_md(html_content)
