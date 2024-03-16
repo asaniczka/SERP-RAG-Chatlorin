@@ -132,6 +132,18 @@ def remove_everything_before_h1(markdown_content: str) -> str:
     return markdown_content
 
 
+def split_at_h2(page: str) -> list[str]:
+    """Splits the content into h2 chunks where each chunk will contain a single h2"""
+
+    splits = page.split("\n## ")
+    for idx, split in enumerate(splits):
+        if idx == 0:
+            continue
+        splits[idx] = "## " + split
+
+    return splits
+
+
 # -----------------------------------------------
 #                   HANDLERS
 # -----------------------------------------------
@@ -184,5 +196,6 @@ if __name__ == "__main__":
     data = handle_convert_html_to_md(html_content)
 
     with open("test.md", "w", encoding="utf-8") as wf:
-        html_content = wf.write(data)
-    print("Num h2", data.count("\n##"))
+        wf.write(data)
+
+    split_at_h2(data)
