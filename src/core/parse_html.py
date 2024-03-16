@@ -77,7 +77,7 @@ def format_headings(markdown_content: str) -> str:
         else:
             formatted_lines.append(line)
 
-    formatted_md = "\n".join([line for line in formatted_lines if line])
+    formatted_md = "\n".join([line for line in formatted_lines])
 
     return formatted_md
 
