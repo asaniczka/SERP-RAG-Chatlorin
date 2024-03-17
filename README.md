@@ -20,7 +20,7 @@ This Python project focuses on creating an API endpoint that:
 
 ### Messages
 
-- Most of the LLM messages have been written to be LLM independent.
+- Most of the core function have been written to be LLM independent.
 - The core uses `BaseMessageLog` and `BaseMessage` to pass around messages and roles.
 - Only the Gemini module uses Gemini-specific formats.
 - You can replace the Gemini-specific formats with OpenAI chat format and the core should still work.
