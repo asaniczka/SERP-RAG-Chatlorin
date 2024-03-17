@@ -8,14 +8,6 @@ This Python project focuses on creating an API endpoint that:
 4. Uses an LLM to generate an answer
 5. and returns the response.
 
-## Task description
-
-- Create an API endpoint for searching Google with a given query
-- Scrape the top 10 search results
-- Generate embeddings for RAG
-- Use OpenAI to generate an answer using the embeddings
-- Return the response with the answer
-
 ## Notes:
 
 ### Messages
