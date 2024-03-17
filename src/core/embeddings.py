@@ -35,7 +35,7 @@ def rand_id_generator(make_str: bool = True) -> int:
     return rand_id
 
 
-def create_collection() -> Collection:
+def create_collection() -> tuple[chromadb.Client, Collection]:
     """Creates a chromadb collection and returns it
 
     Returns:
@@ -43,9 +43,15 @@ def create_collection() -> Collection:
     """
 
     client = chromadb.Client()
-    collection = client.create_collection("serp_webpages")
+    collection = client.get_or_create_collection("serp_webpages")
 
-    return collection
+    return client, collection
+
+
+def delete_embeddings(collection: Collection):
+    """Delets all embeddings within the collection"""
+
+    collection.delete(where={"source": "serp"})
 
 
 def add_embeddings(
@@ -65,6 +71,7 @@ def add_embeddings(
     collection.add(
         ids=[rand_id_generator() for _ in chunks],
         documents=chunks,
+        metadatas=[{"source": "serp"} for _ in chunks],
     )
 
 

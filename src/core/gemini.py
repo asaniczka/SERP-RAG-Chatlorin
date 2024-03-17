@@ -134,7 +134,7 @@ def construct_chat_history(messages: BaseMessageLog) -> ChatHistory:
             if last_role and last_role != AgentEnum.USER:
                 insert_proper_turn(AgentEnum.USER, chat_history)
 
-            message_text = ChatMessagePart(text=message.text)
+            message_text = ChatMessagePart(text=message.content)
             chat_message = ChatMessage(role=GeminiRoles.AI, parts=[message_text])
             chat_history.append(chat_message)
             last_role = AgentEnum.AI
@@ -143,7 +143,7 @@ def construct_chat_history(messages: BaseMessageLog) -> ChatHistory:
             if last_role and last_role != AgentEnum.AI:
                 insert_proper_turn(AgentEnum.AI, chat_history)
 
-            message_text = ChatMessagePart(text=message.text)
+            message_text = ChatMessagePart(text=message.content)
             chat_message = ChatMessage(role=GeminiRoles.USER, parts=[message_text])
             chat_history.append(chat_message)
             last_role = AgentEnum.USER
@@ -170,10 +170,12 @@ if __name__ == "__main__":
 
     msg_log = BaseMessageLog(
         messages=[
-            BaseMessage(**{"role": "user", "text": "You're a helpful assistant"}),
-            BaseMessage(**{"role": "user", "text": "Hello"}),
-            BaseMessage(**{"role": "AI", "text": "Hello! How can I assist you today?"}),
-            BaseMessage(**{"role": "user", "text": "What is 1+1?"}),
+            BaseMessage(**{"role": "user", "content": "You're a helpful assistant"}),
+            BaseMessage(**{"role": "user", "content": "Hello"}),
+            BaseMessage(
+                **{"role": "AI", "content": "Hello! How can I assist you today?"}
+            ),
+            BaseMessage(**{"role": "user", "content": "What is 1+1?"}),
         ]
     )
     constructed_msg_history = construct_chat_history(msg_log)

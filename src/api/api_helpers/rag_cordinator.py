@@ -1,4 +1,6 @@
-"""This helper contains functions to find keywords, poll google, extract pages, and convert them in to embeddings"""
+"""
+This helper contains functions related to finding keywords, polling google, extracting pages, and converting them in to embeddings
+"""
 
 # pylint: disable = wrong-import-position
 # pylint: disable = wrong-import-order
@@ -20,11 +22,28 @@ from fastapi.exceptions import HTTPException
 from src.core.get_serp import handle_getting_serp
 from src.core.get_pages import handle_loading_page_sources
 from src.core.parse_html import handle_convert_html_to_md, split_at_h2
-from src.core.embeddings import create_collection, add_embeddings, get_embeddings
+from src.core.embeddings import (
+    create_collection,
+    add_embeddings,
+    get_embeddings,
+    delete_embeddings,
+)
 from src.core.gemini import handle_generating_response
 
 from src.models.messages import BaseMessageLog, BaseMessage
 from src.models.models_gemini import GeminiKeywords
+
+
+def count_rag_text_words(rag_texts: list[str]):
+    """Counts how many words are in rag texts"""
+
+    total_words = 0
+
+    for context in rag_texts:
+        splits = context.split()
+        total_words += len(splits)
+
+    print(f"Rag Texts have {total_words} words")
 
 
 def construct_rag_message(rag_texts: list[str]) -> BaseMessage:
@@ -44,7 +63,7 @@ def construct_rag_message(rag_texts: list[str]) -> BaseMessage:
 
         rag_message = rag_message + prefix + rag + "\n\n"
 
-    return BaseMessage(role="rag", text=rag_message)
+    return BaseMessage(role="rag", content=rag_message)
 
 
 def get_seeds_serp_keywords(messages: BaseMessageLog) -> GeminiKeywords:
@@ -70,7 +89,7 @@ def get_seeds_serp_keywords(messages: BaseMessageLog) -> GeminiKeywords:
         "keywords": list[str]
     }
     """
-    system_message = BaseMessage(role="system", text=prompt)
+    system_message = BaseMessage(role="system", content=prompt)
     loc_messages = messages.model_copy(deep=True)
     loc_messages.messages.insert(0, system_message)
 
@@ -160,16 +179,18 @@ def handle_reply_generation(messages: BaseMessageLog) -> str:
         chunks = split_at_h2(page)
         h2_chunks.extend(chunks)
 
-    collection = create_collection()
+    client, collection = create_collection()
     add_embeddings(h2_chunks, collection)
 
-    query = messages.messages[-1].text
-    rag_texts = get_embeddings(query, collection, num_results=10)
+    query = messages.messages[-1].content
+    rag_texts = get_embeddings(query, collection, num_results=20)
+    count_rag_text_words(rag_texts)
     rag_message = construct_rag_message(rag_texts)
-
     messages.messages.insert(1, rag_message)
 
     reply = handle_generating_response(messages)
+    delete_embeddings(collection)
+
     return reply
 
 
@@ -179,7 +200,7 @@ if __name__ == "__main__":
         messages=[
             BaseMessage(
                 role="user",
-                text="What is GCP and AWS equilant of Azure container registry?",
+                content="How to allow users to pass in arbitary fields to a pydantic model class?",
             )
         ]
     )
