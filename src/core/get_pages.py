@@ -6,6 +6,7 @@ All functions are async since speed is the primary focus here
 
 from typing import Any
 import asyncio
+import os
 
 import httpx
 from playwright.async_api import async_playwright
@@ -216,6 +217,10 @@ async def handle_loading_page_sources(links: list) -> list[str]:
         f"We have {(len(urls_left_to_process) / len(links))*100}% of pages left to scrape"
     )
     if len(urls_left_to_process) / len(links) <= 0.2:
+        return page_sources
+
+    if os.getenv("WORKING_MODE") == "low-mem":
+        print("Not using playwright since the app is in low-mem mode")
         return page_sources
 
     # Retry the remaining URLs with playwright

@@ -103,7 +103,7 @@ def insert_proper_turn(agent: AgentEnum, chat_history: list):
     if agent == AgentEnum.AI:
         chat_message = ChatMessage(
             role=GeminiRoles.AI,
-            parts=[ChatMessagePart(text="How can I help you?")],
+            parts=[ChatMessagePart(text="Waiting for final instruction to proceed")],
         )
         chat_history.append(chat_message)
     else:

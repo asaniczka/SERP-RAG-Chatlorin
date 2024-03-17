@@ -35,15 +35,29 @@ from src.models.models_gemini import GeminiKeywords
 
 
 def count_rag_text_words(rag_texts: list[str]):
-    """Counts how many words are in rag texts"""
+    """
+    Counts how many words are in rag texts.
+    If there's more than 20,000, remove the rest
+
+    Args:
+        rag_texts (list[str]): A list of rag texts.
+
+    Returns:
+        list[str]: The modified rag_texts list with words removed if the total word count exceeds 20,000.
+    """
 
     total_words = 0
 
-    for context in rag_texts:
+    for idx, context in enumerate(rag_texts):
         splits = context.split()
         total_words += len(splits)
 
+        if total_words >= 20_000:
+            rag_texts = rag_texts[:idx]
+            break
+
     print(f"Rag Texts have {total_words} words")
+    return rag_texts
 
 
 def construct_rag_message(rag_texts: list[str]) -> BaseMessage:
@@ -79,7 +93,10 @@ def get_seeds_serp_keywords(messages: BaseMessageLog) -> GeminiKeywords:
         HTTPException: If unable to get seed keywords after 5 retries.
     """
 
-    prompt = """You are a helpful search assistant. Your task is to look at the conversation and suggest 2-5 different search phrases that the user should search on Google to find the answer to their questions.
+    prompt = """You are a helpful search assistant.
+    
+    Your task is to look at the conversation and suggest 2-5 different search phrases
+    that the user should search on Google to find the answer to their questions.
 
     Search keywords should be short and make sense.
     
@@ -92,6 +109,10 @@ def get_seeds_serp_keywords(messages: BaseMessageLog) -> GeminiKeywords:
     system_message = BaseMessage(role="system", content=prompt)
     loc_messages = messages.model_copy(deep=True)
     loc_messages.messages.insert(0, system_message)
+
+    # Change all roles to user or Gemini thinks it should follow a few shot prompt
+    for idx, message in enumerate(loc_messages.messages):
+        loc_messages.messages[idx].role = "user"
 
     retries = 0
     while retries < 5:
@@ -184,7 +205,7 @@ def handle_reply_generation(messages: BaseMessageLog) -> str:
 
     query = messages.messages[-1].content
     rag_texts = get_embeddings(query, collection, num_results=20)
-    count_rag_text_words(rag_texts)
+    rag_texts = count_rag_text_words(rag_texts)
     rag_message = construct_rag_message(rag_texts)
     messages.messages.insert(1, rag_message)
 
