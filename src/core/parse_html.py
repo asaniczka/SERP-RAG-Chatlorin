@@ -20,7 +20,7 @@ def remove_tags(page: str) -> str:
         str: The modified HTML source code with the specified tags removed.
     """
 
-    tags_to_remove = ["footer", "script", "style", "meta"]
+    tags_to_remove = ["footer", "script", "style", "meta", "img", "svg"]
 
     soup = BeautifulSoup(page, "html.parser")
 
@@ -92,12 +92,6 @@ def remove_links(markdown_content: str) -> str:
     Returns:
         str: The markdown content with links and images removed.
     """
-
-    # remove images
-    links_to_remove = re.findall(r"(!\[.*\]\(*.*\))", markdown_content)
-    links_to_remove.extend(re.findall(r"(!\[\n.*\]\(*.*\))", markdown_content))
-    for link in links_to_remove:
-        markdown_content = markdown_content.replace(link, "")
 
     # remove links
     links_to_remove = re.findall(r"((?:])\(.*\))", markdown_content)

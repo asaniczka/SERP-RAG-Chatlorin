@@ -55,6 +55,16 @@ def parse_serp_for_links(page: str) -> list[str]:
     return links
 
 
-if __name__ == "__main__":
-    serp = get_serp("How to install fast api")
+def handle_getting_serp(query: str) -> list[str]:
+    """
+    Main entrypoint for getting page links from serp
+    """
+
+    serp = get_serp(query)
     links = parse_serp_for_links(serp)
+
+    return links
+
+
+if __name__ == "__main__":
+    handle_getting_serp("How to install fast api")

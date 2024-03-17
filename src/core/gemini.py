@@ -13,8 +13,10 @@ sys.path.append(os.getcwd())
 dotenv.load_dotenv()
 
 import json
+from enum import Enum
 
 import httpx
+from fastapi.exceptions import HTTPException
 
 from src.models.models_gemini import (
     ChatMessage,
@@ -22,6 +24,14 @@ from src.models.models_gemini import (
     GeminiRoles,
     ChatHistory,
 )
+from src.models.messages import BaseMessageLog, BaseMessage
+
+
+class AgentEnum(Enum):
+    """Enum Class for local last message role tracking"""
+
+    AI = 1
+    USER = 2
 
 
 def get_response_from_gemini(messages: ChatHistory) -> str | None:
@@ -60,7 +70,6 @@ def get_response_from_gemini(messages: ChatHistory) -> str | None:
     }
 
     payload.update(messages.model_dump())
-    print(messages.model_dump())
 
     response = httpx.post(url, data=json.dumps(payload, default=str), timeout=120)
 
@@ -72,8 +81,6 @@ def get_response_from_gemini(messages: ChatHistory) -> str | None:
             .get("parts")[0]
             .get("text")
         )
-
-        print(reply)
         return reply
 
     except Exception:
@@ -81,7 +88,33 @@ def get_response_from_gemini(messages: ChatHistory) -> str | None:
         return None
 
 
-def construct_chat_history(messages: list[dict[str, str]]) -> ChatHistory:
+def insert_proper_turn(agent: AgentEnum, chat_history: list):
+    """
+    Since Gemini requires messages to take turns, if the original message log doesn't have a proper turn, we insert a dummy one.
+
+    Parameters:
+    - agent (AgentEnum): The agent type (AI or USER).
+    - chat_history (list): The chat history containing previous messages.
+
+    Returns:
+    None
+    """
+
+    if agent == AgentEnum.AI:
+        chat_message = ChatMessage(
+            role=GeminiRoles.AI,
+            parts=[ChatMessagePart(text="How can I help you?")],
+        )
+        chat_history.append(chat_message)
+    else:
+        chat_message = ChatMessage(
+            role=GeminiRoles.USER,
+            parts=[ChatMessagePart(text="Cool, I'll tell you the task in a bit")],
+        )
+        chat_history.append(chat_message)
+
+
+def construct_chat_history(messages: BaseMessageLog) -> ChatHistory:
     """
     Constructs a chat history in Gemini format.
 
@@ -93,29 +126,58 @@ def construct_chat_history(messages: list[dict[str, str]]) -> ChatHistory:
     """
 
     chat_history = []
+    last_role: AgentEnum = None
 
-    for message in messages:
-        if message["role"] == "user":
-            message_text = ChatMessagePart(text=message["text"])
-            chat_message = ChatMessage(role=GeminiRoles.USER, parts=[message_text])
-            chat_history.append(chat_message)
-        else:
-            message_text = ChatMessagePart(text=message["text"])
+    for message in messages.messages:
+        if message.role.upper() == "AI":
+
+            if last_role and last_role != AgentEnum.USER:
+                insert_proper_turn(AgentEnum.USER, chat_history)
+
+            message_text = ChatMessagePart(text=message.text)
             chat_message = ChatMessage(role=GeminiRoles.AI, parts=[message_text])
             chat_history.append(chat_message)
+            last_role = AgentEnum.AI
+        else:
+
+            if last_role and last_role != AgentEnum.AI:
+                insert_proper_turn(AgentEnum.AI, chat_history)
+
+            message_text = ChatMessagePart(text=message.text)
+            chat_message = ChatMessage(role=GeminiRoles.USER, parts=[message_text])
+            chat_history.append(chat_message)
+            last_role = AgentEnum.USER
 
     validated_chat_history = ChatHistory(contents=chat_history)
 
     return validated_chat_history
 
 
+def handle_generating_response(messages: BaseMessageLog) -> str:
+    """
+    Main entrypoint for generating a response with gemini
+    """
+    history = construct_chat_history(messages)
+    reply = get_response_from_gemini(history)
+
+    if not reply:
+        raise HTTPException(500, "Unable to get a proper response from Gemini")
+
+    return reply
+
+
 if __name__ == "__main__":
-    constructed_msg_history = construct_chat_history(
-        [
-            {"role": "user", "text": "Hello"},
-            {"role": "model", "text": "Hello! How can I assist you today?"},
-            {"role": "user", "text": "What is 1+1?"},
+
+    msg_log = BaseMessageLog(
+        messages=[
+            BaseMessage(**{"role": "user", "text": "You're a helpful assistant"}),
+            BaseMessage(**{"role": "user", "text": "Hello"}),
+            BaseMessage(**{"role": "AI", "text": "Hello! How can I assist you today?"}),
+            BaseMessage(**{"role": "user", "text": "What is 1+1?"}),
         ]
     )
+    constructed_msg_history = construct_chat_history(msg_log)
+    print(constructed_msg_history.model_dump())
 
-    get_response_from_gemini(constructed_msg_history)
+    reply = get_response_from_gemini(constructed_msg_history)
+    print(reply)

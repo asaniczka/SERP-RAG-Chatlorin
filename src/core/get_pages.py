@@ -67,7 +67,7 @@ async def load_pages_with_httpx(
 
         # if the page contains more than 50K characters, return it
         # Else, mark it as page needs js rendering
-        if len(response.text) >= 50000:
+        if len(response.text) >= 30000:
             return link, response.text
 
         return None
@@ -78,7 +78,7 @@ async def load_pages_with_httpx(
 async def load_pages_with_playwright(
     link: str,
     browser: Browser,
-    timeout=8000,
+    timeout=15000,
 ) -> str | None:
     """
     Loads the page and extracts the page source using playwright.
