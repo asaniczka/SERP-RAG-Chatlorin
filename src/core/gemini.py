@@ -62,7 +62,7 @@ def get_response_from_gemini(messages: ChatHistory) -> str | None:
     payload.update(messages.model_dump())
     print(messages.model_dump())
 
-    response = httpx.post(url, data=json.dumps(payload, default=str))
+    response = httpx.post(url, data=json.dumps(payload, default=str), timeout=120)
 
     try:
         reply = (
