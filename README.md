@@ -17,7 +17,7 @@ This Python project focuses on creating an API endpoint that:
 - Only the Gemini module uses Gemini-specific formats.
 - You can replace the Gemini-specific formats with OpenAI chat format and the core should still work.
 
-## Working Mode
+### Working Mode
 
 - By default, the Dockerfile sets the app to be in low-memory mode.
 - This mode will not use JavaScript rendering to load pages.
