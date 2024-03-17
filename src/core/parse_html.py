@@ -72,8 +72,11 @@ def format_headings(markdown_content: str) -> str:
     formatted_lines = []
     for idx, line in enumerate(lines):
         if line.startswith("#") and len(line) < 5:
-            full_heading = line.strip() + " " + lines.pop(idx + 1).strip()
-            formatted_lines.append(full_heading)
+            try:
+                full_heading = line.strip() + " " + lines.pop(idx + 1).strip()
+                formatted_lines.append(full_heading)
+            except:
+                formatted_lines.append(line)
         else:
             formatted_lines.append(line)
 

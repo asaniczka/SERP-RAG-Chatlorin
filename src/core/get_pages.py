@@ -61,7 +61,11 @@ async def load_pages_with_httpx(
         otherwise None.
     """
 
-    response = await client.get(link)
+    try:
+        response = await client.get(link)
+    except Exception as e:
+        print(f"Error getting page via httpx: {e}")
+        return None
 
     if response.status_code == 200:
 
