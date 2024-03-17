@@ -42,4 +42,14 @@ class ChatMessage(BaseModel):
 
 
 class ChatHistory(BaseModel):
+    """
+    Represents the chat history for Gemini
+    """
+
     contents: list[ChatMessage]
+
+
+class GeminiKeywords(BaseModel):
+    """Model to store keywords Gemini Suggests"""
+
+    keywords: list[str]

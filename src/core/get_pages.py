@@ -212,7 +212,10 @@ async def handle_loading_page_sources(links: list) -> list[str]:
         return page_sources
 
     # Return pages if we got data of 80% of the links
-    if len(urls_left_to_process) / len(links) >= 0.8:
+    print(
+        f"We have {(len(urls_left_to_process) / len(links))*100}% of pages left to scrape"
+    )
+    if len(urls_left_to_process) / len(links) <= 0.2:
         return page_sources
 
     # Retry the remaining URLs with playwright

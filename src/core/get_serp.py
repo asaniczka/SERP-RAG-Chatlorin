@@ -36,16 +36,26 @@ def get_serp(query: str) -> str:
     if response.status_code == 200:
         return response.text
 
-    raise HTTPException(500, "Unable to load url google serp")
+    return None
 
 
 def parse_serp_for_links(page: str) -> list[str]:
-    """Parses the serp page and return a list of urls"""
+    """
+    Parses the serp page and returns a list of URLs.
+
+    Args:
+        page (str): The HTML content of the SERP page.
+
+    Returns:
+        list[str]: A list of URLs extracted from the SERP page.
+
+    Raises:
+        HTTPException: If no valid links are found on the SERP page.
+    """
 
     soup = BeautifulSoup(page, "html.parser")
 
     anchors = soup.select("a[jsname=UWckNb]")
-    print("Num Links found: ", len(anchors))
 
     links = [a.get("href") for a in anchors]
 
@@ -55,12 +65,21 @@ def parse_serp_for_links(page: str) -> list[str]:
     return links
 
 
-def handle_getting_serp(query: str) -> list[str]:
+def handle_getting_serp(query: str) -> list[str] | None:
     """
     Main entrypoint for getting page links from serp
+
+    Args:
+        query (str): The search query to retrieve the SERP for.
+
+    Returns:
+        list[str]: A list of page links extracted from the SERP.
     """
 
     serp = get_serp(query)
+    if not serp:
+        return None
+
     links = parse_serp_for_links(serp)
 
     return links

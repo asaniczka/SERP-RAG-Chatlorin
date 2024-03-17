@@ -11,7 +11,11 @@ sys.path.append(os.getcwd())
 dotenv.load_dotenv()
 
 import asyncio
+import json
+import concurrent.futures
+
 from rich import print
+from fastapi.exceptions import HTTPException
 
 from src.core.get_serp import handle_getting_serp
 from src.core.get_pages import handle_loading_page_sources
@@ -20,6 +24,7 @@ from src.core.embeddings import create_collection, add_embeddings, get_embedding
 from src.core.gemini import handle_generating_response
 
 from src.models.messages import BaseMessageLog, BaseMessage
+from src.models.models_gemini import GeminiKeywords
 
 
 def construct_rag_message(rag_texts: list[str]) -> BaseMessage:
@@ -32,7 +37,7 @@ def construct_rag_message(rag_texts: list[str]) -> BaseMessage:
         BaseMessage: The constructed rag message.
 
     """
-    rag_message = "Here are some snippets extracted from web pages related to the query. Use the information in these snippets to answer the user:\n\n"
+    rag_message = "Here are some snippets extracted from web pages related to the query. Try to ignore information that is not relevant to the task at hand Use the information in these snippets to answer the user.:\n\n"
 
     for idx, rag in enumerate(rag_texts, start=1):
         prefix = f"- Relevant web search context {idx}:\n"
@@ -40,6 +45,76 @@ def construct_rag_message(rag_texts: list[str]) -> BaseMessage:
         rag_message = rag_message + prefix + rag + "\n\n"
 
     return BaseMessage(role="rag", text=rag_message)
+
+
+def get_seeds_serp_keywords(messages: BaseMessageLog) -> GeminiKeywords:
+    """Sends the original query to Gemini to generate SERP keywords.
+
+    Args:
+        messages (BaseMessageLog): The conversation messages.
+
+    Returns:
+        GeminiKeywords: The generated SERP keywords.
+
+    Raises:
+        HTTPException: If unable to get seed keywords after 5 retries.
+    """
+
+    prompt = """You are a helpful search assistant. Your task is to look at the conversation and suggest 2-5 different search phrases that the user should search on Google to find the answer to their questions.
+
+    Search keywords should be short and make sense.
+    
+    You should only reply with the search keywords in the JSON format below:
+    
+    {
+        "keywords": list[str]
+    }
+    """
+    system_message = BaseMessage(role="system", text=prompt)
+    loc_messages = messages.model_copy(deep=True)
+    loc_messages.messages.insert(0, system_message)
+
+    retries = 0
+    while retries < 5:
+        try:
+            reply = handle_generating_response(loc_messages)
+            reply = reply.replace("```json", "").strip("`")
+            keywords = GeminiKeywords(**json.loads(reply))
+            return keywords
+        except Exception as e:
+            print(reply)
+            print(f"Error generating keywords: {e}")
+            retries += 1
+            continue
+
+    raise HTTPException(500, "Unable to get seed keywords")
+
+
+def get_all_serp_pages(keywords: GeminiKeywords) -> list[str]:
+    """
+    Calls get serp for all the keywords simultaneously.
+
+    Args:
+        keywords (GeminiKeywords): An instance of the GeminiKeywords class containing the keywords.
+
+    Returns:
+        list[str]: A list of links retrieved from the SERP (Search Engine Results Page) for all the keywords.
+    """
+
+    links = []
+
+    with concurrent.futures.ThreadPoolExecutor() as thread_executor:
+        futures = []
+        for keyword in keywords.keywords:
+            future = thread_executor.submit(handle_getting_serp, keyword)
+            futures.append(future)
+
+        for future in concurrent.futures.as_completed(futures):
+            result = future.result()
+            if result:
+                links.extend(result)
+
+    return links
 
 
 def handle_reply_generation(messages: BaseMessageLog) -> str:
@@ -68,9 +143,11 @@ def handle_reply_generation(messages: BaseMessageLog) -> str:
      - Generate the final response using the message log
      - Return the generated response
     """
-    query = messages.messages[-1].text
 
-    links = handle_getting_serp(query)
+    keywords = get_seeds_serp_keywords(messages)
+    print(f"Got {len(keywords.keywords)} keywords for query")
+    links = get_all_serp_pages(keywords)
+    print(f"Got {len(links)} links for query")
     pages_html = asyncio.run(handle_loading_page_sources(links))
 
     pages_md = []
@@ -86,8 +163,8 @@ def handle_reply_generation(messages: BaseMessageLog) -> str:
     collection = create_collection()
     add_embeddings(h2_chunks, collection)
 
+    query = messages.messages[-1].text
     rag_texts = get_embeddings(query, collection, num_results=10)
-    # print(rag_texts)
     rag_message = construct_rag_message(rag_texts)
 
     messages.messages.insert(1, rag_message)
@@ -102,7 +179,7 @@ if __name__ == "__main__":
         messages=[
             BaseMessage(
                 role="user",
-                text="Best Free Open Source Vector DB that can be run in memory in python",
+                text="What is GCP and AWS equilant of Azure container registry?",
             )
         ]
     )
