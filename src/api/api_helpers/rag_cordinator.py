@@ -80,6 +80,16 @@ def construct_rag_message(rag_texts: list[str]) -> BaseMessage:
     return BaseMessage(role="rag", content=rag_message)
 
 
+def get_system_message() -> BaseMessage:
+    """
+    Returns the system message to primt the LLM
+    """
+
+    system_message = "You are an helpful assistant. Your task is to try your absolutely best to answer the user. The system will try to provide you with helpful google search results. Look throught them and try to find something to answer the user"
+
+    return BaseMessage(role="system", content=system_message)
+
+
 def get_seeds_serp_keywords(messages: BaseMessageLog) -> GeminiKeywords:
     """Sends the original query to Gemini to generate SERP keywords.
 
@@ -206,8 +216,8 @@ def handle_reply_generation(messages: BaseMessageLog) -> str:
     query = messages.messages[-1].content
     rag_texts = get_embeddings(query, collection, num_results=20)
     rag_texts = count_rag_text_words(rag_texts)
-    rag_message = construct_rag_message(rag_texts)
-    messages.messages.insert(1, rag_message)
+    messages.messages.insert(1, construct_rag_message(rag_texts))
+    messages.messages.insert(0, get_system_message())
 
     reply = handle_generating_response(messages)
     delete_embeddings(collection)
