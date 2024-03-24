@@ -85,7 +85,7 @@ def get_system_message() -> BaseMessage:
     Returns the system message to primt the LLM
     """
 
-    system_message = "You are an helpful assistant. Your task is to try your absolutely best to answer the user. The system will try to provide you with helpful google search results. Look throught them and try to find something to answer the user"
+    system_message = "You are an helpful assistant. Your task is to try your absolutely best to answer the user. The system will try to provide you with helpful google search results. Combine your existing knowledge with the information you find to provide the best possible answer to the user. You must answer the question in detail while using lists, bolds, italics, and even make tables where necessary to fully answer the question"
 
     return BaseMessage(role="system", content=system_message)
 
